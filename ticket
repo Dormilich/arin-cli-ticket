@@ -1,0 +1,20 @@
+#!/usr/bin/env php
+<?php
+// ticket
+
+use TicketReader as TR;
+use Symfony\Component\Console\Application;
+
+require __DIR__ . '/vendor/autoload.php';
+
+$db = __DIR__ . '/tickets.sqlite';
+$pdo = new PDO( 'sqlite:' . $db, null, null, [
+    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_EMULATE_PREPARES => false, // seems unsupported in SQLite
+] );
+
+$app = new Application( 'ARIN Ticket Reader', '0.1' );
+
+$app->add( new TR\ApiKey( $pdo ) );
+
+$app->run();
