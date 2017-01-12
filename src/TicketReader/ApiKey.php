@@ -7,7 +7,6 @@ use PDO;
 use Exception;
 use RuntimeException;
 use Defuse\Crypto\Crypto;
-use Defuse\Crypto\KeyProtectedByPassword as Key;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -51,10 +50,12 @@ class ApiKey extends CLI
             $this->validateKey( $key );
             $this->validateAlias( $name );
 
-            $question = 'Please enter the password to protect your API key';
+            $question = 'Please enter the passphrase to protect your API key';
             $password = $this->io->ask( $question );
 
             $this->saveApiKey( $name, $key, $password );
+
+            $this->io->success( 'API Key saved in account ' . $name );
 
             return 0;
         }
@@ -109,14 +110,12 @@ class ApiKey extends CLI
      */
     private function saveApiKey( $account, $key, $password )
     {
-        $access_key = Key::createRandomPasswordProtectedKey( $password );
-        $encrypted = Crypto::encrypt( $key, $access_key );
+        $encrypted = Crypto::encryptWithPassword( $key, $password );
 
-        $sql = 'INSERT OR REPLACE INTO account (alias, crypto_key, access_key ) VALUES (?, ?, ?)';
+        $sql = 'INSERT OR REPLACE INTO account (alias, crypto_key) VALUES (?, ?)';
         $stmt = $this->db->prepare( $sql );
         $stmt->bindValue( 1, $account, PDO::PARAM_STR );
         $stmt->bindValue( 2, $encrypted, PDO::PARAM_STR );
-        $stmt->bindValue( 3, $access_key->saveToAsciiSafeString(), PDO::PARAM_STR );
         $stmt->execute();
     }
 }
